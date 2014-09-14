@@ -1,0 +1,10 @@
+<?php
+
+function bozeak_content_permission() {
+    return array(
+        'administer my module' => array(
+            'title' => 'Bozeaks Content Module',
+            'description' => 'Perform administration tasks',
+            ),
+        );
+}
