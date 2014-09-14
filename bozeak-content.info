@@ -1,0 +1,4 @@
+name = Bozeaks custom module
+description = Hand made content administration module
+core = 7.x
+package = DSS
