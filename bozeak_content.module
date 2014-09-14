@@ -13,6 +13,7 @@ function bozeak_content_menu() {
     $items['content/node'] = array(
             'title' => 'Bozeaks Module',
             'page callback' => 'bozeak_content_view',
+            'access callback' => 'bozeak_content_permission',
         );
     
     return $items;
