@@ -12,13 +12,42 @@ function bozeak_content_permission() {
 function bozeak_content_menu() {
     $items['content/node'] = array(
             'title' => 'Bozeaks Module',
-            'page callback' => 'bozeak_content_view',
+            'page callback' => 'bozeak_content_init',
             'access callback' => 'bozeak_content_permission',
-        );
+    );
     
     return $items;
 }
 
-function bozeak_content_view() {
-    return 'Hello';
+function bozeak_content_init() {
+    $query = db_select('node', 'n')
+        ->fields('n', array('nid', 'title', 'type', 'status', 'changed', 'uid'))
+        ->execute();
+
+        //var_dump($query->fetchAll()); die();
+        $header = array(t('Title'), t('Type'), t('Author'), t('Status'), t('Changed'), t('Actions'));
+        $rows = array();
+
+        foreach ($query as $result) {
+
+            $node = node_load($result->nid, NULL, TRUE);
+            $title = $node->title;
+            $type = $node->type;
+            $changed = date('d-m-Y H:s', $node->changed);
+
+            $user = user_load($result->uid);
+            $status = ($result->status) ? 'published':'unpublished';
+
+            $rows[] = array(
+                    $title,
+                    $type,
+                    $user->name,
+                    $status,
+                    $changed,
+                    l('delete', 'node/'.$node->nid.'/delete')
+                );
+
+        }
+
+        return theme('table', array('header'=>$header, 'rows'=>$rows));
 }
