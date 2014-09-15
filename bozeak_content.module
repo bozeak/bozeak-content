@@ -1,100 +1,128 @@
 <?php
 
+/**
+ * hook_permission() implementation
+ */
 function bozeak_content_permission() {
-    return array(
-        'administer my module' => array(
-            'title' => 'Bozeaks Content Module',
-            'description' => 'Perform administration tasks',
-            ),
-        );
+  return array(
+    'administer my module' => array(
+      'title' => 'Bozeaks Content Module',
+      'description' => 'Perform administration tasks',
+    ),
+  );
 }
 
+
+/**
+ * hook_menu() implementaion
+ */
 function bozeak_content_menu() {
-    $items['content/node'] = array(
-            'title' => 'Bozeaks Module',
-            'page callback' => 'bozeak_content_init',
-            'access callback' => 'bozeak_content_permission',
-    );
+  $items['content/node'] = array(
+    'title' => 'Bozeaks Module',
+    'page callback' => 'bozeak_content_node',
+    'access callback' => 'bozeak_content_permission',
+  );
 
-    $items['content/node/%node/delete'] = array(
-        'title' => 'Delete',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('bozeak_content_node_delete_confirm', 2),
-        'access callback' => 'bozeak_content_permission',
-    );
+  $items['content/node/%node/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('bozeak_content_node_delete_confirm', 2),
+    'access callback' => 'bozeak_content_permission',
+  );
 
-    $items['content/node/%node/unpublish'] = array(
-        'title' => 'Unpublish',
-        'page callback' => 'bozeak_content_node_update_unpublish',
-        'page arguments' => array(2),
-        'access callback' => 'bozeak_content_permission',
-    );
+  $items['content/node/%node/unpublish'] = array(
+    'title' => 'Unpublish',
+    'page callback' => 'bozeak_content_node_update_unpublish',
+    'page arguments' => array(2),
+    'access callback' => 'bozeak_content_permission',
+  );
 
-    $items['content/node/%node/publish'] = array(
-        'title' => 'Publish',
-        'page callback' => 'bozeak_content_node_update_publish',
-        'page arguments' => array(2),
-        'access callback' => 'bozeak_content_permission',
-    );
-    
-    return $items;
+  $items['content/node/%node/publish'] = array(
+    'title' => 'Publish',
+    'page callback' => 'bozeak_content_node_update_publish',
+    'page arguments' => array(2),
+    'access callback' => 'bozeak_content_permission',
+  );
+
+  return $items;
 }
 
-function bozeak_content_init() {
-    $query = db_select('node', 'n')
-        ->fields('n', array('nid', 'title', 'type', 'status', 'changed', 'uid'))
-        ->execute();
 
-        $header = array(t('Title'), t('Type'), t('Author'), t('Status'), t('Changed'), t('Actions'));
-        $rows = array();
+/**
+ * Content show
+ */
+function bozeak_content_node() {
+  $query = db_select('node', 'n')
+    ->fields('n', array('nid', 'title', 'type', 'status', 'changed', 'uid'))
+    ->execute();
 
-        foreach ($query as $result) {
+  $header = array(
+    t('Title'),
+    t('Type'),
+    t('Author'),
+    t('Status'),
+    t('Changed'),
+    t('Actions')
+  );
+  $rows = array();
 
-            $node = node_load($result->nid, NULL, TRUE);
-            $title = $node->title;
-            $type = $node->type;
-            $changed = date('d-m-Y H:s', $node->changed);
+  foreach ($query as $result) {
 
-            $user = user_load($result->uid);
-            $status = ($result->status) ? 'published':'unpublished';
+    $node = node_load($result->nid, NULL, TRUE);
+    $title = $node->title;
+    $type = $node->type;
+    $changed = date('d-m-Y H:s', $node->changed);
 
-            if($result->status == 1) {
-                $status_link = l('unpublish', 'content/node/'.$node->nid.'/unpublish');
-            } else {
-                $status_link = l('publish', 'content/node/'.$node->nid.'/publish');
-            }
+    $user = user_load($result->uid);
+    $status = ($result->status) ? 'published' : 'unpublished';
+    $status_link = ($result->status == 1) ? l('unpublish', 'content/node/' . $node->nid . '/unpublish') : l('publish', 'content/node/' . $node->nid . '/publish');
 
-            $rows[] = array(
-                    $title,
-                    $type,
-                    $user->name,
-                    $status,
-                    $changed,
-                    $status_link .' '.                
-                    
-                    l('delete', 'content/node/'.$node->nid.'/delete')
-                );
+    $rows[] = array(
+      $title,
+      $type,
+      $user->name,
+      $status,
+      $changed,
+      $status_link . ' ' . l('delete', 'content/node/' . $node->nid . '/delete')
+    );
 
-        }
+  }
 
-        return theme('table', array('header'=>$header, 'rows'=>$rows));
+  return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
+
+/**
+ * Unpublish published node
+ */
 function bozeak_content_node_update_unpublish($node) {
-    db_query("UPDATE {node} SET `status` = '0' WHERE `nid` =:nid ;", array(':nid'=>$node->nid));
-    
-    drupal_goto('content/node');
-    drupal_set_message(t('Node is unpublished'), 'status');
+  db_merge('node')
+    ->key(array('nid' => $node->nid))
+    ->fields(array('status' => '0'))
+    ->execute();
+
+  drupal_goto('content/node');
+  drupal_set_message(t('Node is unpublished'), 'status');
 }
 
+
+/**
+ * Publish unpublished node
+ */
 function bozeak_content_node_update_publish($node) {
-    db_query("UPDATE {node} SET `status` = '1' WHERE `nid` =:nid ;", array(':nid'=>$node->nid));
-    
-    drupal_goto('content/node');
-    drupal_set_message(t('Node is published'), 'status');
+  db_merge('node')
+    ->key(array('nid' => $node->nid))
+    ->fields(array('status' => '1'))
+    ->execute();
+
+  drupal_goto('content/node');
+  drupal_set_message(t('Node is published'), 'status');
 }
 
 
+/**
+ * Node delete confirmation query
+ */
 function bozeak_content_node_delete_confirm($form, &$form_state, $node) {
   $form['#node'] = $node;
   // Always provide entity id in the same form key as in the entity edit form.
@@ -109,13 +137,19 @@ function bozeak_content_node_delete_confirm($form, &$form_state, $node) {
 }
 
 
+/**
+ * Node delete after confirm
+ */
 function bozeak_content_node_delete_confirm_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
     $node = node_load($form_state['values']['nid']);
     node_delete($form_state['values']['nid']);
     cache_clear_all();
 
-    drupal_set_message(t('@type %title has been deleted.', array('@type' => node_type_get_name($node), '%title' => $node->title)));
+    drupal_set_message(t('@type %title has been deleted.', array(
+      '@type' => node_type_get_name($node),
+      '%title' => $node->title
+    )));
   }
 
   $form_state['redirect'] = 'content/node';
