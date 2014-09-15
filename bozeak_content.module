@@ -58,14 +58,19 @@ function bozeak_content_init() {
             $user = user_load($result->uid);
             $status = ($result->status) ? 'published':'unpublished';
 
+            if($result->status == 1) {
+                $status_link = l('unpublish', 'content/node/'.$node->nid.'/unpublish');
+            } else {
+                $status_link = l('publish', 'content/node/'.$node->nid.'/publish');
+            }
+
             $rows[] = array(
                     $title,
                     $type,
                     $user->name,
                     $status,
                     $changed,
-
-                     l('unpublish', 'content/node/'.$node->nid.'/unpublish') .'/'. l('publish', 'content/node/'.$node->nid.'/publish'),
+                    $status_link .' '.                
                     
                     l('delete', 'content/node/'.$node->nid.'/delete')
                 );
@@ -79,14 +84,14 @@ function bozeak_content_node_update_unpublish($node) {
     db_query("UPDATE {node} SET `status` = '0' WHERE `nid` =:nid ;", array(':nid'=>$node->nid));
     
     drupal_goto('content/node');
-    drupal_set_message(t('Node in unpublished'));
+    drupal_set_message(t('Node is unpublished'), 'status');
 }
 
 function bozeak_content_node_update_publish($node) {
     db_query("UPDATE {node} SET `status` = '1' WHERE `nid` =:nid ;", array(':nid'=>$node->nid));
     
     drupal_goto('content/node');
-    drupal_set_message(t('Node in published'));
+    drupal_set_message(t('Node is published'), 'status');
 }
 
 
@@ -113,5 +118,5 @@ function bozeak_content_node_delete_confirm_submit($form, &$form_state) {
     drupal_set_message(t('@type %title has been deleted.', array('@type' => node_type_get_name($node), '%title' => $node->title)));
   }
 
-  $form_state['redirect'] = '<front>';
+  $form_state['redirect'] = 'content/node';
 }
